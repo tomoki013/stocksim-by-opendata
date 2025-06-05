@@ -1,12 +1,12 @@
-export interface Company {
+export type Company = {
     id: string;
     name: string;
     currentPrice: number;
     previousPrice: number;
     shares: number;
-}
-  
-export interface GameState {
+};
+
+export type GameState = {
     isStarted: boolean;
     currentDay: number;
     currentTime: string;
@@ -14,4 +14,4 @@ export interface GameState {
     companies: Company[];
     isPaused: boolean;
     isAfterHours: boolean;
-}
+};
