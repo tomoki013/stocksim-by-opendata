@@ -13,28 +13,35 @@ export function calculateCurrentPrices(
     const intervalsPassed = (hours - 9) * 4 + Math.floor(minutes / 15);
     const dataLength = marketData.length;
 
-    if (dataLength < 2) return companies; // ループに必要な最低限のデータがない場合は何もしない
+    if (dataLength < 2) return companies;
 
     return companies.map((company, index) => {
-        // ループさせるために剰余演算子(%)を使用
         const startDataIndex = (day - 1 + index) % (dataLength - 1);
         const endDataIndex = (startDataIndex + 1) % dataLength;
 
         const startData = marketData[startDataIndex];
         const endData = marketData[endDataIndex];
 
-        // データソースの '終値' カラムの価格差を取得する
-        const priceDiffFromData = ((endData[DATA_SOURCE_COLUMN_NAME] as number) - (startData[DATA_SOURCE_COLUMN_NAME] as number));
-
-        if (isNaN(priceDiffFromData)) {
-            return company;
+        const startPriceFromData = startData[DATA_SOURCE_COLUMN_NAME] as number;
+        const endPriceFromData = endData[DATA_SOURCE_COLUMN_NAME] as number;
+        
+        // 変化率(%)を計算
+        if (isNaN(startPriceFromData) || isNaN(endPriceFromData) || startPriceFromData === 0) {
+            return company; // データが不正な場合は更新しない
         }
+        const percentageChange = (endPriceFromData - startPriceFromData) / startPriceFromData;
 
-        const changePerInterval = priceDiffFromData / TRADING_SESSIONS_PER_DAY;
-        const newPrice = Math.round(company.dayStartPrice + (changePerInterval * intervalsPassed));
+        // 企業の当日の始値に変化率を適用して、その日の総変動額を計算
+        const totalDayChange = company.dayStartPrice * percentageChange;
 
-        // 価格が0未満にならないように調整
-        const finalPrice = Math.max(0, newPrice);
+        // 15分ごとの変動額を計算
+        const changePerInterval = totalDayChange / TRADING_SESSIONS_PER_DAY;
+        
+        // 当日の始値を基準に変動を計算
+        const newPrice = company.dayStartPrice + (changePerInterval * intervalsPassed);
+
+        // 価格が0未満にならないように調整し、四捨五入
+        const finalPrice = Math.max(0, Math.round(newPrice));
 
         return {
             ...company,
