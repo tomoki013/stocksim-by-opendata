@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { INITIAL_COMPANIES } from '@/datas/initialCompanies';
+import { INITIAL_COMPANIES } from '@/data/initialCompanies';
 // CSVファイルから直接テキストデータをインポート
-import stockDataCsv from '@/datas/nikkei_stock_average_daily_jp.csv'
+import stockDataCsv from '@/data/nikkei_stock_average_daily_jp.csv'
 import { parseStockData } from '@/lib/csvUtils';
 import { calculateCurrentPrices, advanceTime } from '@/lib/stockGameUtils';
 import CompanyList from './CompanyList';
@@ -45,7 +45,7 @@ const StockGame = () => {
             ...prev,
             companies: calculateCurrentPrices(prev.companies, prev.currentDay, prev.currentTime, prev.stockMarketData),
         }));
-    }, [gameState.stockMarketData, gameState.currentDay, gameState.currentTime]);
+    }, [gameState.stockMarketData]);
 
     const advanceGameTime = useCallback(() => {
         setGameState((prev) => {

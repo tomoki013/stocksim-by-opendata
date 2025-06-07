@@ -1,4 +1,3 @@
-import React from 'react';
 import { Company } from '@/types/stockGame';
 
 type Props = {
