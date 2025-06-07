@@ -5,6 +5,7 @@ export type Company = {
     previousPrice: number;
     shares: number;
     dayStartPrice: number; // 当日の計算の基準となる始値
+    volatility: number; // 変動率を追加
 };
 
 export type DailyStockData = {
