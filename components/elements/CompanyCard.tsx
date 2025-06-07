@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types/stockGame';
 import { ArrowUpIcon, ArrowDownIcon, ArrowRightIcon } from 'lucide-react';
-import React from 'react';
 
 type Props = {
     company: Company;
