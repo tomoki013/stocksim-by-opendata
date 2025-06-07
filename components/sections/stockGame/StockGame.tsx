@@ -3,7 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { INITIAL_COMPANIES } from '@/datas/initialCompanies';
-import { updateStockPrices, advanceTime } from '@/lib/stockGameUtils';
+// CSVファイルから直接テキストデータをインポート
+import stockDataCsv from '@/datas/nikkei_stock_average_daily_jp.csv'
+import { parseStockData } from '@/lib/csvUtils';
+import { calculateCurrentPrices, advanceTime } from '@/lib/stockGameUtils';
 import CompanyList from './CompanyList';
 import PortfolioSummary from './PortfolioSummary';
 import TradeDialog from '@/components/elements/TradeDialog';
@@ -18,6 +21,7 @@ const INITIAL_STATE: GameState = {
     companies: INITIAL_COMPANIES,
     isPaused: false,
     isAfterHours: false,
+    stockMarketData: [],
 };
 
 const StockGame = () => {
@@ -29,12 +33,19 @@ const StockGame = () => {
     const [isBuying, setIsBuying] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    useEffect(() => {
+        // インポートしたCSV文字列をパース
+        const parsedData = parseStockData(stockDataCsv);
+        setGameState(prev => ({ ...prev, stockMarketData: parsedData }));
+    }, []);
+
     const updateStocks = useCallback(() => {
+        if (gameState.stockMarketData.length === 0) return;
         setGameState((prev) => ({
             ...prev,
-            companies: updateStockPrices(prev.companies),
+            companies: calculateCurrentPrices(prev.companies, prev.currentDay, prev.currentTime, prev.stockMarketData),
         }));
-    }, []);
+    }, [gameState.stockMarketData, gameState.currentDay, gameState.currentTime]);
 
     const advanceGameTime = useCallback(() => {
         setGameState((prev) => {
@@ -56,11 +67,15 @@ const StockGame = () => {
 
     useEffect(() => {
         if (!gameState.isStarted || gameState.isPaused) return;
-        const interval = setInterval(() => {
+
+        const gameTickInterval = setInterval(() => {
             updateStocks();
             advanceGameTime();
         }, 2000);
-        return () => clearInterval(interval);
+
+        return () => {
+            clearInterval(gameTickInterval);
+        };
     }, [gameState.isStarted, gameState.isPaused, updateStocks, advanceGameTime]);
 
     useEffect(() => {
@@ -68,18 +83,36 @@ const StockGame = () => {
             setShowAfterHoursDialog(true);
             const timer = setTimeout(() => {
                 setShowAfterHoursDialog(false);
-                setGameState((prev) => ({
-                    ...prev,
-                    currentDay: prev.currentDay + 1,
-                    currentTime: '09:00',
-                    isAfterHours: false,
-                    isPaused: false,
-                }));
+                setGameState((prev) => {
+                    const nextDay = prev.currentDay + 1;
+                    
+                    const updatedCompanies = prev.companies.map(c => ({
+                        ...c,
+                        dayStartPrice: c.currentPrice,
+                    }));
+
+                    return {
+                        ...prev,
+                        currentDay: nextDay,
+                        currentTime: '09:00',
+                        isAfterHours: false,
+                        isPaused: false,
+                        companies: updatedCompanies,
+                    };
+                });
             }, 10000);
             return () => clearTimeout(timer);
         }
-    }, [gameState.isAfterHours]);
+    }, [gameState.isAfterHours, gameState.companies]);
 
+    const handleStartGame = () => {
+        setGameState((prev) => ({
+            ...prev,
+            isStarted: true,
+        }));
+    };
+    
+    // (handleTradeClick, handleTrade, return文は変更なし)
     const handleTradeClick = (company: Company, buying: boolean) => {
         setSelectedCompany(company);
         setIsBuying(buying);
@@ -155,9 +188,10 @@ const StockGame = () => {
                     {!gameState.isStarted && (
                         <Button
                             size="lg"
-                            onClick={() => setGameState((prev) => ({ ...prev, isStarted: true }))}
+                            onClick={handleStartGame}
+                            disabled={gameState.stockMarketData.length === 0}
                         >
-                            開始
+                            {gameState.stockMarketData.length > 0 ? '開始' : 'データ読込中...'}
                         </Button>
                     )}
                     <div className="text-2xl font-semibold mt-4 mb-8">
