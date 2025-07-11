@@ -5,7 +5,7 @@ export type Company = {
     previousPrice: number;
     shares: number;
     dayStartPrice: number; // 当日の計算の基準となる始値
-    volatility: number; // 変動率を追加
+    dataSourceIndex: number; // どのデータソースを使用するかのインデックス
 };
 
 export type DailyStockData = {
@@ -21,5 +21,5 @@ export type GameState = {
     companies: Company[];
     isPaused: boolean;
     isAfterHours: boolean;
-    stockMarketData: DailyStockData[];
+    stockMarketData: DailyStockData[][]; // 4つのデータソースを格納する配列
 };

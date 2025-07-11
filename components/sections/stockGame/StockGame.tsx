@@ -3,9 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { INITIAL_COMPANIES } from '@/data/initialCompanies';
-// CSVファイルから直接テキストデータをインポート
-import stockDataCsv from '@/data/nikkei_stock_average_daily_jp.csv'
-import { parseStockData } from '@/lib/csvUtils';
+// 4つのCSVファイルから直接テキストデータをインポート
+import stockDataCsv1 from '@/data/nikkei_stock_average_daily_jp.csv'
+import stockDataCsv2 from '@/data/nikkei_225_futures_index_series_daily_jp.csv'
+import stockDataCsv3 from '@/data/nikkei_225_total_return_index_daily_jp.csv'
+import stockDataCsv4 from '@/data/nikkei_225_covered_call_index_daily_jp.csv'
+import { parseMultipleStockData } from '@/lib/csvUtils';
 import { calculateCurrentPrices, advanceTime } from '@/lib/stockGameUtils';
 import CompanyList from './CompanyList';
 import PortfolioSummary from './PortfolioSummary';
@@ -34,9 +37,10 @@ const StockGame = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        // インポートしたCSV文字列をパース
-        const parsedData = parseStockData(stockDataCsv);
-        setGameState(prev => ({ ...prev, stockMarketData: parsedData }));
+        // 4つのCSV文字列を配列にまとめてパース
+        const csvStrings = [stockDataCsv1, stockDataCsv2, stockDataCsv3, stockDataCsv4];
+        const parsedDataSources = parseMultipleStockData(csvStrings);
+        setGameState(prev => ({ ...prev, stockMarketData: parsedDataSources }));
     }, []);
 
     const updateStocks = useCallback(() => {
@@ -112,7 +116,6 @@ const StockGame = () => {
         }));
     };
     
-    // (handleTradeClick, handleTrade, return文は変更なし)
     const handleTradeClick = (company: Company, buying: boolean) => {
         setSelectedCompany(company);
         setIsBuying(buying);
