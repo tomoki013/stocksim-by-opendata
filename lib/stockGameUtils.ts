@@ -29,8 +29,7 @@ export function calculateCurrentPrices(
         // データが2日分未満なら変動なし
         if (dataLength < 2) return company;
 
-        // --- 企業固有の「方向性」（トレンド）を決定 ---
-        // 前日と当日の終値を比較し、上昇(+1)/下降(-1)/横ばい(0)を判定
+        // --- データの始値と終値を取得 ---
         const startDataIndex = (day - 1) % (dataLength - 1);
         const endDataIndex = (startDataIndex + 1) % dataLength;
 
@@ -47,16 +46,26 @@ export function calculateCurrentPrices(
             return company;
         }
 
-        // 実際のデータに基づく変動率を計算
-        const dataChangeRate = (endPriceFromData - startPriceFromData) / startPriceFromData;
-        
-        // ランダム変動を廃止し、データの変動率のみを利用
-        // 変動額 = 現在価格 × データ変動率 × 3（変動幅を3倍に拡大）
-        const finalChange = Math.round(company.currentPrice * dataChangeRate * 3);
-        
-        // 前回の価格に変動額を適用
-        const newPrice = company.currentPrice + finalChange;
+        // 1日の変動率を計算
+        const dailyChangeRate = (endPriceFromData - startPriceFromData) / startPriceFromData;
 
+        // --- 1日の経過時間を計算 ---
+        const [currentHours, currentMinutes] = currentTime.split(':').map(Number);
+        // 9:00 (開始) から 15:30 (終了) までの総取引時間は390分
+        const minutesFromOpen = (currentHours * 60 + currentMinutes) - (9 * 60);
+        const totalTradingMinutes = (15 * 60 + 30) - (9 * 60); // 390
+
+        // 1日のうちどれくらいの時間が経過したかの割合 (0.0 〜 1.0)
+        const timeFraction = Math.max(0, Math.min(1, minutesFromOpen / totalTradingMinutes));
+        
+        // --- 線形補間による現在価格の計算 ---
+        // その日の始値 (dayStartPrice) を基準に、経過時間に応じた目標価格を計算
+        const targetPrice = company.dayStartPrice * (1 + dailyChangeRate * timeFraction);
+
+        // わずかなランダム変動を追加 (+/- 0.5%)
+        const randomFactor = 1 + (Math.random() - 0.5) * 0.01;
+        const newPrice = Math.round(targetPrice * randomFactor);
+        
         // 価格が0未満にならないように調整（最低1円）
         const finalPrice = Math.max(1, newPrice);
 
