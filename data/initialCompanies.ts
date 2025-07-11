@@ -16,7 +16,7 @@ export const INITIAL_COMPANIES: Company[] = [
         previousPrice: initialPrices['株式会社A'],
         shares: 0, 
         dayStartPrice: initialPrices['株式会社A'],
-        volatility: 0.8,
+        dataSourceIndex: 0, // 1つ目のデータソースを使用
     },
     {
         id: '2',
@@ -25,7 +25,7 @@ export const INITIAL_COMPANIES: Company[] = [
         previousPrice: initialPrices['株式会社B'],
         shares: 0,
         dayStartPrice: initialPrices['株式会社B'],
-        volatility: 1.0,
+        dataSourceIndex: 1, // 2つ目のデータソースを使用
     },
     {
         id: '3',
@@ -34,7 +34,7 @@ export const INITIAL_COMPANIES: Company[] = [
         previousPrice: initialPrices['株式会社C'],
         shares: 0,
         dayStartPrice: initialPrices['株式会社C'],
-        volatility: 1.2,
+        dataSourceIndex: 2, // 3つ目のデータソースを使用
     },
     {
         id: '4',
@@ -43,6 +43,6 @@ export const INITIAL_COMPANIES: Company[] = [
         previousPrice: initialPrices['株式会社D'],
         shares: 0,
         dayStartPrice: initialPrices['株式会社D'],
-        volatility: 1.5,
+        dataSourceIndex: 3, // 4つ目のデータソースを使用
     },
 ];

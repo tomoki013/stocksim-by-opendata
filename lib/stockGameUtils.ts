@@ -3,63 +3,56 @@ import { Company, DailyStockData } from '../types/stockGame';
 
 // 市場の方向性を決めるためのカラム名（終値を参照）
 const DATA_SOURCE_COLUMN_NAME = '終値';
-// 株価変動の基準値（±10円の変動を想定）
-const BASE_FLUCTUATION = 10;
 
 /**
  * 各企業の現在株価を計算する関数
  * @param companies 企業リスト
  * @param day 現在の日数（1日目, 2日目...）
  * @param currentTime 現在時刻（"HH:mm"形式）
- * @param marketData 日ごとの株価データ
+ * @param marketDataSources 4つのデータソース
  * @returns 各企業の株価を更新した新しい配列
  */
 export function calculateCurrentPrices(
     companies: Company[],
     day: number,
     currentTime: string,
-    marketData: DailyStockData[]
+    marketDataSources: DailyStockData[][]
 ): Company[] {
-    const dataLength = marketData.length;
+    // データソースが不足している場合は変動なし
+    if (marketDataSources.length < 4) return companies;
 
-    // データが2日分未満なら変動なし
-    if (dataLength < 2) return companies;
-
-    // --- 市場全体の「方向性」（トレンド）を決定 ---
-    // 前日と当日の終値を比較し、上昇(+1)/下降(-1)/横ばい(0)を判定
-    const startDataIndex = (day - 1) % (dataLength - 1);
-    const endDataIndex = (startDataIndex + 1) % dataLength;
-
-    // データ最終日に達したら変動を停止
-    if (endDataIndex === 0) {
-        return companies;
-    }
-    const startPriceFromData = marketData[startDataIndex][DATA_SOURCE_COLUMN_NAME] as number;
-    const endPriceFromData = marketData[endDataIndex][DATA_SOURCE_COLUMN_NAME] as number;
-
-    // データ不正時は変動なし
-    if (isNaN(startPriceFromData) || isNaN(endPriceFromData)) {
-        return companies;
-    }
-    // +1:上昇, -1:下降, 0:横ばい
-    const marketTrend = Math.sign(endPriceFromData - startPriceFromData);
-
-    // --- 各社の株価を計算 ---
     return companies.map((company) => {
-        // 1. 基本となるランダムな変動を生成 (-1 ~ +1の範囲)
-        let randomChange = (Math.random() - 0.5) * 2;
+        // 該当企業のデータソースを取得
+        const marketData = marketDataSources[company.dataSourceIndex];
+        const dataLength = marketData.length;
 
-        // 2. 市場トレンドを少しだけ反映させる（価格変動の方向を完全に決めない）
-        // 市場が上昇傾向なら、少しだけプラスになりやすくする
-        if (marketTrend !== 0) {
-            randomChange += marketTrend * 0.2; // トレンドの影響度を調整
+        // データが2日分未満なら変動なし
+        if (dataLength < 2) return company;
+
+        // --- 企業固有の「方向性」（トレンド）を決定 ---
+        // 前日と当日の終値を比較し、上昇(+1)/下降(-1)/横ばい(0)を判定
+        const startDataIndex = (day - 1) % (dataLength - 1);
+        const endDataIndex = (startDataIndex + 1) % dataLength;
+
+        // データ最終日に達したら変動を停止
+        if (endDataIndex === 0) {
+            return company;
         }
 
-        // 3. 最終的な変動額を計算
-        // (基準値 × ランダムな方向 × 企業のボラティリティ)
-        const finalChange = Math.round(
-            BASE_FLUCTUATION * randomChange * company.volatility
-        );
+        const startPriceFromData = marketData[startDataIndex][DATA_SOURCE_COLUMN_NAME] as number;
+        const endPriceFromData = marketData[endDataIndex][DATA_SOURCE_COLUMN_NAME] as number;
+
+        // データ不正時は変動なし
+        if (isNaN(startPriceFromData) || isNaN(endPriceFromData)) {
+            return company;
+        }
+
+        // 実際のデータに基づく変動率を計算
+        const dataChangeRate = (endPriceFromData - startPriceFromData) / startPriceFromData;
+        
+        // ランダム変動を廃止し、データの変動率のみを利用
+        // 変動額 = 現在価格 × データ変動率 × 3（変動幅を3倍に拡大）
+        const finalChange = Math.round(company.currentPrice * dataChangeRate * 3);
         
         // 前回の価格に変動額を適用
         const newPrice = company.currentPrice + finalChange;

@@ -23,3 +23,8 @@ export const parseStockData = (csvString: string): DailyStockData[] => {
     }
     return data;
 };
+
+// 複数のCSVファイルを一括でパースする関数
+export const parseMultipleStockData = (csvStrings: string[]): DailyStockData[][] => {
+    return csvStrings.map(csvString => parseStockData(csvString));
+};
